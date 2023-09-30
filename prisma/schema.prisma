@@ -1,0 +1,1213 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model activity_log {
+  id           BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  log_name     String?   @db.VarChar(255)
+  description  String    @db.Text
+  subject_type String?   @db.VarChar(255)
+  event        String?   @db.VarChar(255)
+  subject_id   BigInt?   @db.UnsignedBigInt
+  causer_type  String?   @db.VarChar(255)
+  causer_id    BigInt?   @db.UnsignedBigInt
+  properties   Json?
+  batch_uuid   String?   @db.Char(36)
+  created_at   DateTime? @db.Timestamp(0)
+  updated_at   DateTime? @db.Timestamp(0)
+
+  @@index([log_name], map: "activity_log_log_name_index")
+  @@index([causer_type, causer_id], map: "causer")
+  @@index([subject_type, subject_id], map: "subject")
+}
+
+model background_jobs {
+  id             BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id     BigInt         @db.UnsignedBigInt
+  type           String?        @db.VarChar(255)
+  request        String?        @db.VarChar(255)
+  response       String?        @db.VarChar(255)
+  status         String         @default("PENDING") @db.VarChar(255)
+  created_at     DateTime?      @db.Timestamp(0)
+  completed_at   DateTime?      @db.Timestamp(0)
+  sass_companies sass_companies @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "background_jobs_company_id_foreign")
+
+  @@index([company_id], map: "background_jobs_company_id_foreign")
+}
+
+model broadcast_contact_group {
+  id               BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  broadcast_id     BigInt         @db.UnsignedBigInt
+  contact_group_id BigInt         @db.UnsignedBigInt
+  broadcasts       broadcasts     @relation(fields: [broadcast_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "broadcast_contact_group_broadcast_id_foreign")
+  contact_groups   contact_groups @relation(fields: [contact_group_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "broadcast_contact_group_contact_group_id_foreign")
+
+  @@index([broadcast_id], map: "broadcast_contact_group_broadcast_id_foreign")
+  @@index([contact_group_id], map: "broadcast_contact_group_contact_group_id_foreign")
+}
+
+model broadcast_contacts {
+  id           BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  broadcast_id BigInt     @db.UnsignedBigInt
+  contact_id   BigInt     @db.UnsignedBigInt
+  message_id   BigInt?    @db.UnsignedBigInt
+  send_status  String     @default("pending") @db.VarChar(255)
+  broadcasts   broadcasts @relation(fields: [broadcast_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "broadcast_contacts_broadcast_id_foreign")
+  contacts     contacts   @relation(fields: [contact_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "broadcast_contacts_contact_id_foreign")
+  messages     messages?  @relation(fields: [message_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "broadcast_contacts_message_id_foreign")
+
+  @@index([broadcast_id], map: "broadcast_contacts_broadcast_id_foreign")
+  @@index([contact_id], map: "broadcast_contacts_contact_id_foreign")
+  @@index([message_id], map: "broadcast_contacts_message_id_foreign")
+}
+
+model broadcasts {
+  id                         BigInt                    @id @default(autoincrement()) @db.UnsignedBigInt
+  staff_id                   BigInt                    @db.UnsignedBigInt
+  channel_id                 BigInt                    @db.UnsignedBigInt
+  auto_response_type         String?                   @db.VarChar(255)
+  auto_response_message_code String?                   @db.VarChar(255)
+  auto_response_bot          String?                   @db.VarChar(255)
+  name                       String?                   @db.VarChar(255)
+  config                     String?                   @db.LongText
+  summary                    String?                   @db.Text
+  status                     String                    @default("pending") @db.VarChar(255)
+  created_at                 DateTime?                 @db.Timestamp(0)
+  updated_at                 DateTime?                 @db.Timestamp(0)
+  campaign_id                BigInt?                   @db.UnsignedBigInt
+  broadcast_contact_group    broadcast_contact_group[]
+  broadcast_contacts         broadcast_contacts[]
+  campaigns                  campaigns?                @relation(fields: [campaign_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "broadcasts_campaign_id_foreign")
+  channels                   channels                  @relation(fields: [channel_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "broadcasts_channel_id_foreign")
+  sass_staffs                sass_staffs               @relation(fields: [staff_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "broadcasts_staff_id_foreign")
+
+  @@index([campaign_id], map: "broadcasts_campaign_id_foreign")
+  @@index([channel_id], map: "broadcasts_channel_id_foreign")
+  @@index([staff_id], map: "broadcasts_staff_id_foreign")
+}
+
+model campaigns {
+  id             BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id     BigInt         @db.UnsignedBigInt
+  name           String         @db.VarChar(255)
+  description    String?        @db.Text
+  created_at     DateTime?      @db.Timestamp(0)
+  updated_at     DateTime?      @db.Timestamp(0)
+  broadcasts     broadcasts[]
+  sass_companies sass_companies @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "campaigns_company_id_foreign")
+
+  @@index([company_id], map: "campaigns_company_id_foreign")
+}
+
+model channels {
+  id                         BigInt                       @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id                 BigInt                       @db.UnsignedBigInt
+  name                       String?                      @db.VarChar(255)
+  channel_type               String?                      @db.VarChar(255)
+  config                     Json?
+  token                      String?                      @db.VarChar(255)
+  created_at                 DateTime?                    @db.Timestamp(0)
+  updated_at                 DateTime?                    @db.Timestamp(0)
+  from_phone_number_id       String?                      @db.VarChar(255)
+  access_token               String?                      @db.VarChar(255)
+  business_account_id        String?                      @db.VarChar(255)
+  phone_number               String?                      @db.VarChar(255)
+  is_disconnected            Boolean                      @default(false)
+  broadcasts                 broadcasts[]
+  sass_companies             sass_companies               @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "channels_company_id_foreign")
+  conversations              conversations[]
+  whatsapp_message_templates whatsapp_message_templates[]
+
+  @@index([company_id], map: "channels_company_id_foreign")
+}
+
+model chat_bot_sessions {
+  id              BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  conversation_id BigInt        @db.UnsignedBigInt
+  bot_id          String        @db.VarChar(30)
+  started_at      DateTime?     @db.Timestamp(0)
+  ended_at        DateTime?     @db.Timestamp(0)
+  conversations   conversations @relation(fields: [conversation_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "chat_bot_sessions_conversation_id_foreign")
+  messages        messages[]
+
+  @@index([conversation_id], map: "chat_bot_sessions_conversation_id_foreign")
+}
+
+model chat_sessions {
+  id              BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  conversation_id BigInt        @db.UnsignedBigInt
+  session_id      String        @db.VarChar(255)
+  is_started      Boolean       @default(true)
+  origin_type     String        @db.VarChar(255)
+  pricing_model   String        @db.VarChar(255)
+  billable        Boolean
+  expiration_at   DateTime?     @db.Timestamp(0)
+  conversations   conversations @relation(fields: [conversation_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "chat_sessions_conversation_id_foreign")
+  messages        messages[]
+
+  @@index([conversation_id], map: "chat_sessions_conversation_id_foreign")
+}
+
+model company_settings {
+  id         BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id BigInt? @db.UnsignedBigInt
+  key        String  @db.VarChar(255)
+  value      String  @db.Text
+
+  @@unique([company_id, key], map: "company_settings_company_id_key_unique")
+  @@index([company_id], map: "company_settings_company_id_index")
+}
+
+model contact_attribute_labels {
+  id              BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id      BigInt         @db.UnsignedBigInt
+  attribute_name  String?        @db.VarChar(255)
+  attribute_label String?        @db.VarChar(255)
+  created_at      DateTime?      @db.Timestamp(0)
+  updated_at      DateTime?      @db.Timestamp(0)
+  sass_companies  sass_companies @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "contact_attribute_labels_company_id_foreign")
+
+  @@index([company_id], map: "contact_attribute_labels_company_id_foreign")
+}
+
+model contact_attributes {
+  id              BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  contact_id      BigInt    @db.UnsignedBigInt
+  attribute_name  String?   @db.VarChar(255)
+  attribute_value String?   @db.VarChar(255)
+  created_at      DateTime? @db.Timestamp(0)
+  updated_at      DateTime? @db.Timestamp(0)
+  contacts        contacts  @relation(fields: [contact_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "contact_attributes_contact_id_foreign")
+
+  @@index([contact_id], map: "contact_attributes_contact_id_foreign")
+}
+
+model contact_group_assign {
+  id               BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  contact_id       BigInt    @db.UnsignedBigInt
+  contact_group_id BigInt    @db.UnsignedBigInt
+  created_at       DateTime? @db.Timestamp(0)
+  updated_at       DateTime? @db.Timestamp(0)
+}
+
+model contact_groups {
+  id                      BigInt                    @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id              BigInt                    @db.UnsignedBigInt
+  name                    String?                   @db.VarChar(255)
+  created_at              DateTime?                 @db.Timestamp(0)
+  updated_at              DateTime?                 @db.Timestamp(0)
+  broadcast_contact_group broadcast_contact_group[]
+  sass_companies          sass_companies            @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "contact_groups_company_id_foreign")
+
+  @@index([company_id], map: "contact_groups_company_id_foreign")
+}
+
+model contacts {
+  id                 BigInt               @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id         BigInt               @db.UnsignedBigInt
+  name               String?              @db.VarChar(255)
+  phone_number       String?              @db.VarChar(255)
+  dnd_enabled        Boolean              @default(false)
+  created_at         DateTime?            @db.Timestamp(0)
+  updated_at         DateTime?            @db.Timestamp(0)
+  broadcast_contacts broadcast_contacts[]
+  contact_attributes contact_attributes[]
+  sass_companies     sass_companies       @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "contacts_company_id_foreign")
+  conversations      conversations[]
+  starred_contacts   starred_contacts[]
+
+  @@index([company_id], map: "contacts_company_id_foreign")
+}
+
+model conversation_closed_reasons {
+  id             BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id     BigInt          @db.UnsignedBigInt
+  name           String?         @db.VarChar(255)
+  created_at     DateTime?       @db.Timestamp(0)
+  updated_at     DateTime?       @db.Timestamp(0)
+  sass_companies sass_companies  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "conversation_closed_reasons_company_id_foreign")
+  conversations  conversations[]
+
+  @@index([company_id], map: "conversation_closed_reasons_company_id_foreign")
+}
+
+model conversations {
+  id                          BigInt                       @id @default(autoincrement()) @db.UnsignedBigInt
+  channel_id                  BigInt                       @db.UnsignedBigInt
+  company_id                  BigInt                       @db.UnsignedBigInt
+  contact_id                  BigInt                       @db.UnsignedBigInt
+  assigned_staff_id           BigInt?                      @db.UnsignedBigInt
+  assigned_team_id            BigInt?                      @db.UnsignedBigInt
+  enable_chat_bot             Boolean                      @default(true)
+  assigned_chat_bot_id        String?                      @db.VarChar(50)
+  closed_reason_id            BigInt?                      @db.UnsignedBigInt
+  state                       String                       @default("open") @db.VarChar(255)
+  created_at                  DateTime?                    @db.Timestamp(0)
+  updated_at                  DateTime?                    @db.Timestamp(0)
+  chat_bot_sessions           chat_bot_sessions[]
+  chat_sessions               chat_sessions[]
+  sass_staffs                 sass_staffs?                 @relation(fields: [assigned_staff_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "conversations_assigned_staff_id_foreign")
+  teams                       teams?                       @relation(fields: [assigned_team_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "conversations_assigned_team_id_foreign")
+  channels                    channels                     @relation(fields: [channel_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "conversations_channel_id_foreign")
+  conversation_closed_reasons conversation_closed_reasons? @relation(fields: [closed_reason_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "conversations_closed_reason_id_foreign")
+  sass_companies              sass_companies               @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "conversations_company_id_foreign")
+  contacts                    contacts                     @relation(fields: [contact_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "conversations_contact_id_foreign")
+  last_read_messages          last_read_messages[]
+  messages                    messages[]
+  starred_conversations       starred_conversations[]
+
+  @@index([assigned_staff_id], map: "conversations_assigned_staff_id_foreign")
+  @@index([assigned_team_id], map: "conversations_assigned_team_id_foreign")
+  @@index([channel_id], map: "conversations_channel_id_foreign")
+  @@index([closed_reason_id], map: "conversations_closed_reason_id_foreign")
+  @@index([company_id], map: "conversations_company_id_foreign")
+  @@index([contact_id], map: "conversations_contact_id_foreign")
+}
+
+model custom_variables {
+  id             BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id     BigInt         @db.UnsignedBigInt
+  name           String?        @db.VarChar(255)
+  value          String?        @db.VarChar(255)
+  created_at     DateTime?      @db.Timestamp(0)
+  updated_at     DateTime?      @db.Timestamp(0)
+  sass_companies sass_companies @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "custom_variables_company_id_foreign")
+
+  @@index([company_id], map: "custom_variables_company_id_foreign")
+}
+
+model device_tokens {
+  id          BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
+  staff_id    BigInt      @db.UnsignedBigInt
+  token       String      @db.VarChar(255)
+  sass_staffs sass_staffs @relation(fields: [staff_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "device_tokens_staff_id_foreign")
+
+  @@index([staff_id], map: "device_tokens_staff_id_foreign")
+}
+
+model failed_jobs {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  uuid       String   @unique(map: "failed_jobs_uuid_unique") @db.VarChar(255)
+  connection String   @db.Text
+  queue      String   @db.Text
+  payload    String   @db.LongText
+  exception  String   @db.LongText
+  failed_at  DateTime @default(now()) @db.Timestamp(0)
+}
+
+model faq_categories {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  name       String?   @db.VarChar(255)
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+  faqs       faqs[]
+}
+
+model faqs {
+  id             BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  category_id    BigInt         @db.UnsignedBigInt
+  question       String?        @db.VarChar(255)
+  answer         String?        @db.Text
+  created_at     DateTime?      @db.Timestamp(0)
+  updated_at     DateTime?      @db.Timestamp(0)
+  faq_categories faq_categories @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "faqs_category_id_foreign")
+
+  @@index([category_id], map: "faqs_category_id_foreign")
+}
+
+model jobs {
+  id           BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  queue        String @db.VarChar(255)
+  payload      String @db.LongText
+  attempts     Int    @db.UnsignedTinyInt
+  reserved_at  Int?   @db.UnsignedInt
+  available_at Int    @db.UnsignedInt
+  created_at   Int    @db.UnsignedInt
+
+  @@index([queue], map: "jobs_queue_index")
+}
+
+model last_read_messages {
+  id              BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  conversation_id BigInt        @db.UnsignedBigInt
+  staff_id        BigInt        @db.UnsignedBigInt
+  message_id      BigInt        @db.UnsignedBigInt
+  conversations   conversations @relation(fields: [conversation_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "last_read_messages_conversation_id_foreign")
+  messages        messages      @relation(fields: [message_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "last_read_messages_message_id_foreign")
+  sass_staffs     sass_staffs   @relation(fields: [staff_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "last_read_messages_staff_id_foreign")
+
+  @@index([conversation_id], map: "last_read_messages_conversation_id_foreign")
+  @@index([message_id], map: "last_read_messages_message_id_foreign")
+  @@index([staff_id], map: "last_read_messages_staff_id_foreign")
+}
+
+model locations {
+  id             BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id     BigInt         @db.UnsignedBigInt
+  latitude       String?        @db.VarChar(255)
+  longitude      String?        @db.VarChar(255)
+  name           String?        @db.VarChar(255)
+  address        String?        @db.Text
+  created_at     DateTime?      @db.Timestamp(0)
+  updated_at     DateTime?      @db.Timestamp(0)
+  sass_companies sass_companies @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "locations_company_id_foreign")
+
+  @@index([company_id], map: "locations_company_id_foreign")
+}
+
+model media {
+  id                    BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  model_type            String    @db.VarChar(255)
+  model_id              BigInt    @db.UnsignedBigInt
+  uuid                  String?   @unique(map: "media_uuid_unique") @db.Char(36)
+  collection_name       String    @db.VarChar(255)
+  name                  String    @db.VarChar(255)
+  file_name             String    @db.VarChar(255)
+  mime_type             String?   @db.VarChar(255)
+  disk                  String    @db.VarChar(255)
+  conversions_disk      String?   @db.VarChar(255)
+  size                  BigInt    @db.UnsignedBigInt
+  manipulations         Json
+  custom_properties     Json
+  generated_conversions Json
+  responsive_images     Json
+  order_column          Int?      @db.UnsignedInt
+  created_at            DateTime? @db.Timestamp(0)
+  updated_at            DateTime? @db.Timestamp(0)
+
+  @@index([model_type, model_id], map: "media_model_type_model_id_index")
+  @@index([order_column], map: "media_order_column_index")
+}
+
+model message_format_bots {
+  id             BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id     BigInt         @db.UnsignedBigInt
+  message        String         @db.VarChar(255)
+  bot_id         String         @db.VarChar(30)
+  created_at     DateTime?      @db.Timestamp(0)
+  updated_at     DateTime?      @db.Timestamp(0)
+  sass_companies sass_companies @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "message_format_bots_company_id_foreign")
+
+  @@index([company_id], map: "message_format_bots_company_id_foreign")
+}
+
+model messages {
+  id                  BigInt               @id @default(autoincrement()) @db.UnsignedBigInt
+  uuid                String?              @db.VarChar(255)
+  conversation_id     BigInt               @db.UnsignedBigInt
+  session_id          BigInt?              @db.UnsignedBigInt
+  chat_bot_session_id BigInt?              @db.UnsignedBigInt
+  from_staff_id       BigInt?              @db.UnsignedBigInt
+  wa_message_id       String?              @db.Text
+  message_type        String               @default("TEXT") @db.VarChar(255)
+  text_message        String?              @db.Text
+  image_message       String?              @db.Text
+  document_message    String?              @db.Text
+  audio_message       String?              @db.Text
+  sticker_message     String?              @db.Text
+  location_message    String?              @db.Text
+  video_message       String?              @db.Text
+  contacts_message    String?              @db.Text
+  template_message    String?              @db.LongText
+  errors              String?              @db.Text
+  is_sent             Boolean              @default(false)
+  sent_at             DateTime?            @db.Timestamp(0)
+  failed_at           DateTime?            @db.Timestamp(0)
+  delivered_at        DateTime?            @db.Timestamp(0)
+  seen_at             DateTime?            @db.Timestamp(0)
+  created_at          DateTime?            @db.Timestamp(0)
+  updated_at          DateTime?            @db.Timestamp(0)
+  context             String?              @db.Text
+  ref_wa_message_id   String?              @db.Text
+  interactive_message String?              @db.Text
+  order_message       String?              @db.Text
+  message_template    String?              @db.Text
+  media_url           String?              @db.Text
+  fb_ad_referral      String?              @db.Text
+  broadcast_contacts  broadcast_contacts[]
+  last_read_messages  last_read_messages[]
+  chat_bot_sessions   chat_bot_sessions?   @relation(fields: [chat_bot_session_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "messages_chat_bot_session_id_foreign")
+  conversations       conversations        @relation(fields: [conversation_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "messages_conversation_id_foreign")
+  sass_staffs         sass_staffs?         @relation(fields: [from_staff_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "messages_from_staff_id_foreign")
+  chat_sessions       chat_sessions?       @relation(fields: [session_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "messages_session_id_foreign")
+
+  @@index([chat_bot_session_id], map: "messages_chat_bot_session_id_foreign")
+  @@index([conversation_id], map: "messages_conversation_id_foreign")
+  @@index([from_staff_id], map: "messages_from_staff_id_foreign")
+  @@index([session_id], map: "messages_session_id_foreign")
+}
+
+model migrations {
+  id        Int    @id @default(autoincrement()) @db.UnsignedInt
+  migration String @db.VarChar(255)
+  batch     Int
+}
+
+model model_has_permissions {
+  permission_id BigInt      @db.UnsignedBigInt
+  model_type    String      @db.VarChar(255)
+  model_id      BigInt      @db.UnsignedBigInt
+  permissions   permissions @relation(fields: [permission_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "model_has_permissions_permission_id_foreign")
+
+  @@id([permission_id, model_id, model_type])
+  @@index([model_id, model_type], map: "model_has_permissions_model_id_model_type_index")
+}
+
+model model_has_roles {
+  role_id    BigInt @db.UnsignedBigInt
+  model_type String @db.VarChar(255)
+  model_id   BigInt @db.UnsignedBigInt
+  roles      roles  @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "model_has_roles_role_id_foreign")
+
+  @@id([role_id, model_id, model_type])
+  @@index([model_id, model_type], map: "model_has_roles_model_id_model_type_index")
+}
+
+model permissions {
+  id                    BigInt                  @id @default(autoincrement()) @db.UnsignedBigInt
+  name                  String                  @db.VarChar(255)
+  guard_name            String                  @db.VarChar(255)
+  created_at            DateTime?               @db.Timestamp(0)
+  updated_at            DateTime?               @db.Timestamp(0)
+  model_has_permissions model_has_permissions[]
+  role_has_permissions  role_has_permissions[]
+
+  @@unique([name, guard_name], map: "permissions_name_guard_name_unique")
+}
+
+model personal_access_tokens {
+  id             BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  tokenable_type String    @db.VarChar(255)
+  tokenable_id   BigInt    @db.UnsignedBigInt
+  name           String    @db.VarChar(255)
+  token          String    @unique(map: "personal_access_tokens_token_unique") @db.VarChar(64)
+  abilities      String?   @db.Text
+  last_used_at   DateTime? @db.Timestamp(0)
+  expires_at     DateTime? @db.Timestamp(0)
+  created_at     DateTime? @db.Timestamp(0)
+  updated_at     DateTime? @db.Timestamp(0)
+
+  @@index([tokenable_type, tokenable_id], map: "personal_access_tokens_tokenable_type_tokenable_id_index")
+}
+
+model quick_messages {
+  id               BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id       BigInt         @db.UnsignedBigInt
+  ref_id           Int?
+  code             String?        @db.VarChar(255)
+  message_type     String         @default("TEXT") @db.VarChar(255)
+  text_message     String?        @db.Text
+  image_message    String?        @db.Text
+  document_message String?        @db.Text
+  audio_message    String?        @db.Text
+  sticker_message  String?        @db.Text
+  location_message String?        @db.Text
+  video_message    String?        @db.Text
+  contacts_message String?        @db.Text
+  template_message String?        @db.LongText
+  status           String?        @db.Text
+  created_at       DateTime?      @db.Timestamp(0)
+  updated_at       DateTime?      @db.Timestamp(0)
+  message_template String?        @db.Text
+  sass_companies   sass_companies @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "quick_messages_company_id_foreign")
+
+  @@index([company_id], map: "quick_messages_company_id_foreign")
+}
+
+model role_has_permissions {
+  permission_id BigInt      @db.UnsignedBigInt
+  role_id       BigInt      @db.UnsignedBigInt
+  permissions   permissions @relation(fields: [permission_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "role_has_permissions_permission_id_foreign")
+  roles         roles       @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "role_has_permissions_role_id_foreign")
+
+  @@id([permission_id, role_id])
+  @@index([role_id], map: "role_has_permissions_role_id_foreign")
+}
+
+model roles {
+  id                   BigInt                 @id @default(autoincrement()) @db.UnsignedBigInt
+  name                 String                 @db.VarChar(255)
+  guard_name           String                 @db.VarChar(255)
+  created_at           DateTime?              @db.Timestamp(0)
+  updated_at           DateTime?              @db.Timestamp(0)
+  model_has_roles      model_has_roles[]
+  role_has_permissions role_has_permissions[]
+
+  @@unique([name, guard_name], map: "roles_name_guard_name_unique")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sass_admins {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  role_id    Int?
+  username   String?   @db.VarChar(255)
+  email      String?   @db.VarChar(255)
+  first_name String?   @db.VarChar(255)
+  last_name  String?   @db.VarChar(255)
+  image      String?   @db.VarChar(255)
+  password   String?   @db.VarChar(255)
+  status     Boolean   @default(true)
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sass_basic_extendeds {
+  id                             BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  language_id                    Int?
+  cookie_alert_status            Boolean @default(true)
+  cookie_alert_text              Bytes?  @db.Blob
+  cookie_alert_button_text       String? @db.VarChar(255)
+  to_mail                        String? @db.VarChar(255)
+  default_language_direction     String  @default("ltr") @db.VarChar(20)
+  from_mail                      String? @db.VarChar(255)
+  from_name                      String? @db.VarChar(255)
+  is_smtp                        Boolean @default(false)
+  smtp_host                      String? @db.VarChar(255)
+  smtp_port                      String? @db.VarChar(30)
+  encryption                     String? @db.VarChar(30)
+  smtp_username                  String? @db.VarChar(255)
+  smtp_password                  String? @db.VarChar(255)
+  base_currency_symbol           Bytes?  @db.Blob
+  base_currency_symbol_position  String  @default("left") @db.VarChar(10)
+  base_currency_text             String? @db.VarChar(100)
+  base_currency_text_position    String  @default("right") @db.VarChar(10)
+  base_currency_rate             Decimal @default(0.00) @db.Decimal(8, 2)
+  hero_section_title             String? @db.VarChar(255)
+  hero_section_text              String? @db.VarChar(255)
+  hero_section_button_text       String? @db.VarChar(30)
+  hero_section_button_url        String? @db.Text
+  hero_section_video_url         String? @db.Text
+  hero_img                       String? @db.VarChar(50)
+  timezone                       String? @db.Text
+  contact_addresses              String? @db.Text
+  contact_numbers                String? @db.Text
+  contact_mails                  String? @db.Text
+  is_whatsapp                    Boolean @default(true)
+  whatsapp_number                String? @db.VarChar(50)
+  whatsapp_header_title          String? @db.VarChar(255)
+  whatsapp_popup_message         String? @db.Text
+  whatsapp_popup                 Boolean @default(true)
+  domain_request_success_message String? @db.VarChar(255)
+  cname_record_section_title     String? @db.VarChar(255)
+  cname_record_section_text      String? @db.Text
+  package_features               String? @db.Text
+  expiration_reminder            Int     @default(3)
+  custom_css                     String? @db.LongText
+  custom_js                      String? @db.LongText
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sass_basic_settings {
+  id                          BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  language_id                 Int?
+  favicon                     String? @db.VarChar(50)
+  logo                        String? @db.VarChar(50)
+  preloader_status            Boolean @default(true)
+  preloader                   String? @db.VarChar(50)
+  website_title               String? @db.VarChar(255)
+  base_color                  String? @db.VarChar(30)
+  breadcrumb                  String? @db.VarChar(50)
+  footer_logo                 String? @db.VarChar(50)
+  footer_text                 String? @db.VarChar(255)
+  newsletter_text             String? @db.VarChar(255)
+  copyright_text              Bytes?  @db.Blob
+  intro_subtitle              String? @db.VarChar(50)
+  intro_title                 String? @db.VarChar(50)
+  intro_text                  String? @db.Text
+  intro_main_image            String?
+  contact_form_title          String? @db.VarChar(255)
+  contact_text                String? @db.VarChar(255)
+  contact_info_title          String?
+  tawk_to_script              String? @db.Text
+  is_recaptcha                Boolean @default(false)
+  google_recaptcha_site_key   String? @db.VarChar(255)
+  google_recaptcha_secret_key String? @db.VarChar(255)
+  is_tawkto                   Boolean @default(true)
+  tawkto_property_id          String? @db.VarChar(255)
+  is_disqus                   Boolean @default(true)
+  is_user_disqus              Boolean @default(true)
+  disqus_shortname            String? @db.VarChar(255)
+  disqus_script               String? @db.Text
+  maintainance_mode           Boolean @default(false)
+  maintainance_text           String? @db.Text
+  maintenance_img             String? @db.VarChar(50)
+  maintenance_status          Boolean @default(false)
+  secret_path                 String? @db.VarChar(255)
+  feature_section             Boolean @default(true)
+  process_section             Boolean @default(true)
+  featured_users_section      Boolean @default(true)
+  pricing_section             Boolean @default(true)
+  partners_section            Boolean @default(true)
+  intro_section               Boolean @default(true)
+  testimonial_section         Boolean @default(true)
+  feature_title               String? @db.VarChar(255)
+  work_process_title          String? @db.VarChar(255)
+  work_process_subtitle       String? @db.VarChar(255)
+  featured_users_title        String? @db.VarChar(255)
+  featured_users_subtitle     String? @db.VarChar(255)
+  pricing_title               String? @db.VarChar(255)
+  pricing_subtitle            String? @db.VarChar(255)
+  testimonial_title           String? @db.VarChar(255)
+  testimonial_subtitle        String? @db.VarChar(255)
+  news_section                Boolean @default(true)
+  top_footer_section          Boolean @default(true)
+  copyright_section           Boolean @default(true)
+  blog_title                  String? @db.VarChar(255)
+  blog_subtitle               String? @db.VarChar(255)
+  useful_links_title          String? @db.VarChar(50)
+  newsletter_title            String? @db.VarChar(50)
+  newsletter_subtitle         String? @db.VarChar(255)
+  is_whatsapp                 Boolean @default(true)
+  whatsapp_number             String? @db.VarChar(50)
+  whatsapp_header_title       String? @db.VarChar(255)
+  whatsapp_popup_message      String? @db.Text
+  whatsapp_popup              Boolean @default(true)
+  templates_section           Boolean @default(true)
+  preview_templates_title     String? @db.VarChar(255)
+  preview_templates_subtitle  String? @db.VarChar(255)
+}
+
+model sass_bcategories {
+  id            BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  language_id   Int     @default(0)
+  name          String? @db.VarChar(255)
+  slug          String? @db.VarChar(255)
+  status        Boolean @default(true)
+  serial_number Int     @default(0)
+}
+
+model sass_blogs {
+  id               BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  language_id      Int       @default(0)
+  bcategory_id     Int?
+  title            String?   @db.VarChar(255)
+  slug             String?   @db.VarChar(255)
+  main_image       String?   @db.VarChar(255)
+  content          Bytes?    @db.Blob
+  tags             String?   @db.Text
+  meta_keywords    String?   @db.Text
+  meta_description String?   @db.Text
+  serial_number    Int       @default(0)
+  created_at       DateTime? @db.Timestamp(0)
+  updated_at       DateTime? @db.Timestamp(0)
+}
+
+model sass_companies {
+  id                          BigInt                        @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id                     BigInt                        @db.UnsignedBigInt
+  name                        String?                       @db.VarChar(255)
+  phone_number                String?                       @db.VarChar(255)
+  email                       String?                       @db.VarChar(255)
+  country                     String?                       @db.VarChar(255)
+  state                       String?                       @db.VarChar(255)
+  city                        String?                       @db.VarChar(255)
+  address                     String?                       @db.Text
+  status                      String                        @default("ACTIVE") @db.VarChar(255)
+  created_at                  DateTime?                     @db.Timestamp(0)
+  updated_at                  DateTime?                     @db.Timestamp(0)
+  country_code                String?                       @db.VarChar(255)
+  payment_ref                 String?                       @db.VarChar(255)
+  package_code                String?                       @db.VarChar(255)
+  background_jobs             background_jobs[]
+  campaigns                   campaigns[]
+  channels                    channels[]
+  contact_attribute_labels    contact_attribute_labels[]
+  contact_groups              contact_groups[]
+  contacts                    contacts[]
+  conversation_closed_reasons conversation_closed_reasons[]
+  conversations               conversations[]
+  custom_variables            custom_variables[]
+  locations                   locations[]
+  message_format_bots         message_format_bots[]
+  quick_messages              quick_messages[]
+  starred_contacts            starred_contacts[]
+  starred_conversations       starred_conversations[]
+  teams                       teams[]
+}
+
+model sass_coupons {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  name       String?   @db.VarChar(255)
+  code       String?   @db.VarChar(255)
+  type       String?   @db.VarChar(255)
+  value      Decimal?  @db.Decimal(11, 2)
+  start_date String?   @db.VarChar(255)
+  end_date   String?   @db.VarChar(255)
+  packages   String?   @db.Text
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+}
+
+model sass_email_templates {
+  id            BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  email_type    String? @db.VarChar(100)
+  email_subject String? @db.Text
+  email_body    String? @db.LongText
+}
+
+model sass_faq_categories {
+  id         BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
+  name       String?     @db.VarChar(255)
+  order      Int         @default(0)
+  created_at DateTime?   @db.Timestamp(0)
+  updated_at DateTime?   @db.Timestamp(0)
+  sass_faqs  sass_faqs[]
+}
+
+model sass_faqs {
+  id                  BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
+  language_id         Int                 @default(0)
+  category_id         BigInt              @db.UnsignedBigInt
+  question            String?             @db.VarChar(255)
+  answer              String?             @db.Text
+  serial_number       Int                 @default(0)
+  sass_faq_categories sass_faq_categories @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "sass_faqs_category_id_foreign")
+
+  @@index([category_id], map: "sass_faqs_category_id_foreign")
+}
+
+model sass_features {
+  id            BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  language_id   Int     @default(0)
+  icon          String? @db.VarChar(255)
+  title         String? @db.VarChar(50)
+  text          String? @db.VarChar(255)
+  serial_number Int     @default(0)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sass_languages {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  name       String?   @db.VarChar(255)
+  code       String?   @db.VarChar(255)
+  is_default Boolean   @default(true)
+  rtl        Boolean   @default(false)
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sass_memberships {
+  id                  BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  package_price       Float      @default(0)
+  discount            Float      @default(0)
+  coupon_code         String?    @db.VarChar(255)
+  price               Float      @default(0)
+  currency            String     @db.VarChar(255)
+  currency_symbol     String     @db.VarChar(255)
+  payment_method      String?    @db.VarChar(255)
+  transaction_id      String     @db.VarChar(255)
+  status              Int        @default(0)
+  is_trial            Boolean    @default(false)
+  trial_days          Int        @default(0)
+  receipt             String?    @db.LongText
+  transaction_details String?    @db.LongText
+  settings            String?    @db.LongText
+  package_id          Int
+  user_id             BigInt     @db.UnsignedBigInt
+  start_date          DateTime?  @db.Date
+  expire_date         DateTime?  @db.Date
+  created_at          DateTime?  @db.Timestamp(0)
+  updated_at          DateTime?  @db.Timestamp(0)
+  modified            Boolean    @default(false)
+  sass_users          sass_users @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "memberships_user_id_foreign")
+
+  @@index([user_id], map: "memberships_user_id_foreign")
+}
+
+model sass_menus {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  language_id Int?
+  menus       String?   @db.Text
+  created_at  DateTime? @db.Timestamp(0)
+  updated_at  DateTime? @db.Timestamp(0)
+}
+
+model sass_offline_gateways {
+  id                BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  name              String?   @db.VarChar(100)
+  short_description String?   @db.Text
+  instructions      Bytes?    @db.Blob
+  status            Boolean   @default(true)
+  serial_number     Int       @default(0)
+  is_receipt        Boolean   @default(true)
+  receipt           String?   @db.VarChar(100)
+  created_at        DateTime? @db.Timestamp(0)
+  updated_at        DateTime? @db.Timestamp(0)
+}
+
+model sass_packages {
+  id               BigInt                 @id @default(autoincrement()) @db.UnsignedBigInt
+  title            String                 @db.VarChar(255)
+  slug             String                 @db.VarChar(255)
+  price            Float                  @default(0)
+  term             String?                @db.VarChar(255)
+  featured         sass_packages_featured @default(dbgenerated("0"))
+  is_trial         sass_packages_is_trial @default(dbgenerated("0"))
+  trial_days       Int?
+  status           sass_packages_status   @default(dbgenerated("1"))
+  features         String?                @db.Text
+  meta_keywords    String?                @db.LongText
+  meta_description String?                @db.LongText
+  created_at       DateTime?              @db.Timestamp(0)
+  updated_at       DateTime?              @db.Timestamp(0)
+  for_india        Boolean                @default(false)
+}
+
+model sass_pages {
+  id               BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  language_id      Int       @default(0)
+  name             String?   @db.VarChar(255)
+  title            String?   @db.VarChar(255)
+  slug             String?   @db.VarChar(255)
+  body             Bytes?    @db.Blob
+  status           Boolean   @default(true)
+  meta_keywords    String?   @db.Text
+  meta_description String?   @db.Text
+  created_at       DateTime? @db.Timestamp(0)
+  updated_at       DateTime? @db.Timestamp(0)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model sass_password_resets {
+  email      String    @db.VarChar(255)
+  token      String    @db.VarChar(255)
+  created_at DateTime? @db.Timestamp(0)
+
+  @@index([email], map: "sass_password_resets_email_index")
+  @@ignore
+}
+
+model sass_payment_gateways {
+  id          BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  subtitle    String? @db.VarChar(255)
+  title       String? @db.VarChar(255)
+  details     String? @db.Text
+  name        String? @db.VarChar(100)
+  type        String  @default("manual") @db.VarChar(20)
+  information String? @db.MediumText
+  keyword     String? @db.VarChar(255)
+  status      Boolean @default(true)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sass_popups {
+  id                 BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  language_id        BigInt    @db.UnsignedBigInt
+  name               String?   @db.VarChar(255)
+  image              String?   @db.VarChar(100)
+  background_image   String?   @db.VarChar(100)
+  background_color   String?   @db.VarChar(100)
+  background_opacity Decimal   @default(1.00) @db.Decimal(8, 2)
+  title              String?   @db.VarChar(255)
+  text               String?   @db.Text
+  button_text        String?   @db.VarChar(255)
+  button_url         String?   @db.Text
+  button_color       String?   @db.VarChar(20)
+  end_date           String?   @db.VarChar(255)
+  end_time           String?   @db.VarChar(255)
+  delay              Int       @default(1000)
+  serial_number      Int       @default(0)
+  type               Boolean   @default(true)
+  created_at         DateTime? @db.Timestamp(0)
+  updated_at         DateTime? @db.Timestamp(0)
+  status             Boolean   @default(true)
+
+  @@index([language_id], map: "popups_language_id_foreign")
+}
+
+model sass_seos {
+  id                               Int     @id
+  language_id                      Int?
+  home_meta_keywords               String? @db.Text
+  home_meta_description            String? @db.Text
+  profiles_meta_keywords           String? @db.Text
+  profiles_meta_description        String? @db.Text
+  pricing_meta_keywords            String? @db.Text
+  pricing_meta_description         String? @db.Text
+  blogs_meta_keywords              String? @db.Text
+  blogs_meta_description           String? @db.Text
+  faqs_meta_keywords               String? @db.Text
+  faqs_meta_description            String? @db.Text
+  contact_meta_keywords            String? @db.Text
+  contact_meta_description         String? @db.Text
+  login_meta_keywords              String? @db.Text
+  login_meta_description           String? @db.Text
+  forget_password_meta_keywords    String? @db.Text
+  forget_password_meta_description String? @db.Text
+  checkout_meta_keywords           String? @db.Text
+  checkout_meta_description        String? @db.Text
+}
+
+model sass_socials {
+  id            BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  icon          String? @db.Text
+  url           String? @db.VarChar(255)
+  serial_number Int     @default(0)
+}
+
+model sass_staffs {
+  id                 BigInt               @id @default(autoincrement()) @db.UnsignedBigInt
+  name               String               @db.VarChar(255)
+  email              String               @unique(map: "sass_staffs_email_unique") @db.VarChar(255)
+  timezone           String?              @db.VarChar(255)
+  email_verified_at  DateTime?            @db.Timestamp(0)
+  password           String?              @db.VarChar(255)
+  remember_token     String?              @db.VarChar(100)
+  company_id         BigInt?              @db.UnsignedBigInt
+  profile_photo_path String?              @db.VarChar(2048)
+  created_at         DateTime?            @db.Timestamp(0)
+  updated_at         DateTime?            @db.Timestamp(0)
+  broadcasts         broadcasts[]
+  conversations      conversations[]
+  device_tokens      device_tokens[]
+  last_read_messages last_read_messages[]
+  messages           messages[]
+}
+
+model sass_timezones {
+  id           BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  country_code String  @db.VarChar(10)
+  timezone     String  @db.VarChar(125)
+  gmt_offset   Decimal @db.Decimal(10, 2)
+  dst_offset   Decimal @db.Decimal(10, 2)
+  raw_offset   Decimal @db.Decimal(10, 2)
+}
+
+model sass_ulinks {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  language_id Int       @default(0)
+  name        String?   @db.VarChar(255)
+  url         String?   @db.VarChar(255)
+  created_at  DateTime? @db.Timestamp(0)
+  updated_at  DateTime? @db.Timestamp(0)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sass_user_basic_settings {
+  id                      BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  favicon                 String?   @db.Text
+  breadcrumb              String?   @db.VarChar(255)
+  logo                    String?   @db.Text
+  preloader               String?   @db.VarChar(50)
+  base_color              String    @default("ff4a17") @db.VarChar(20)
+  theme                   String    @default("home_one") @db.VarChar(50)
+  email                   String?   @db.VarChar(50)
+  from_name               String?   @db.VarChar(50)
+  is_quote                Boolean   @default(true)
+  user_id                 Int
+  qr_image                String?   @db.VarChar(100)
+  qr_color                String    @default("000000") @db.VarChar(50)
+  qr_size                 Int       @default(250)
+  qr_style                String    @default("square") @db.VarChar(250)
+  qr_eye_style            String    @default("square") @db.VarChar(250)
+  qr_margin               Int       @default(0)
+  qr_text                 String?   @db.VarChar(255)
+  qr_text_color           String    @default("000000") @db.VarChar(50)
+  qr_text_size            Int       @default(15)
+  qr_text_x               Int       @default(50)
+  qr_text_y               Int       @default(50)
+  qr_inserted_image       String?   @db.VarChar(250)
+  qr_inserted_image_size  Int       @default(20)
+  qr_inserted_image_x     Int       @default(50)
+  qr_inserted_image_y     Int       @default(50)
+  qr_type                 String    @default("default") @db.VarChar(50)
+  qr_url                  String?   @db.VarChar(255)
+  created_at              DateTime? @db.Timestamp(0)
+  updated_at              DateTime? @db.Timestamp(0)
+  whatsapp_status         Boolean   @default(false)
+  whatsapp_number         String?   @db.VarChar(30)
+  whatsapp_header_title   String?   @db.VarChar(255)
+  whatsapp_popup_status   Boolean   @default(false)
+  whatsapp_popup_message  String?   @db.Text
+  disqus_status           Boolean   @default(false)
+  disqus_short_name       String?   @db.VarChar(30)
+  analytics_status        Boolean   @default(false)
+  measurement_id          String?   @db.VarChar(100)
+  pixel_status            Boolean   @default(false)
+  pixel_id                String?   @db.VarChar(30)
+  tawkto_status           Boolean   @default(false)
+  tawkto_direct_chat_link String?   @db.VarChar(255)
+  custom_css              String?   @db.LongText
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sass_user_languages {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  name       String    @db.VarChar(255)
+  code       String    @db.VarChar(255)
+  is_default Boolean   @default(false)
+  rtl        Int       @db.TinyInt
+  keywords   String?   @db.LongText
+  user_id    Int?
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model sass_users {
+  id                     BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id             BigInt?            @db.UnsignedBigInt
+  first_name             String?            @db.VarChar(255)
+  last_name              String?            @db.VarChar(255)
+  photo                  String?            @db.VarChar(255)
+  username               String?            @db.VarChar(255)
+  email                  String?            @db.VarChar(255)
+  password               String?            @db.VarChar(255)
+  company_name           String?            @db.VarChar(255)
+  phone                  String?            @db.VarChar(255)
+  city                   String?            @db.VarChar(255)
+  state                  String?            @db.VarChar(255)
+  address                String?            @db.VarChar(255)
+  country                String?            @db.VarChar(255)
+  remember_token         String?            @db.VarChar(100)
+  featured               Int                @default(0)
+  status                 Int                @default(0)
+  online_status          Boolean            @default(true)
+  verification_link      String?            @db.Text
+  email_verified         Boolean            @default(false)
+  subdomain_status       Boolean            @default(false)
+  created_at             DateTime?          @db.Timestamp(0)
+  updated_at             DateTime?          @db.Timestamp(0)
+  preview_template       Boolean            @default(false)
+  template_img           String?            @db.VarChar(100)
+  template_serial_number Int                @default(0)
+  sass_memberships       sass_memberships[]
+}
+
+model sessions {
+  id            String  @id @db.VarChar(255)
+  user_id       BigInt? @db.UnsignedBigInt
+  ip_address    String? @db.VarChar(45)
+  user_agent    String? @db.Text
+  payload       String  @db.Text
+  last_activity Int
+
+  @@index([last_activity], map: "sessions_last_activity_index")
+  @@index([user_id], map: "sessions_user_id_index")
+}
+
+model starred_contacts {
+  id             BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id     BigInt         @db.UnsignedBigInt
+  contact_id     BigInt         @db.UnsignedBigInt
+  created_at     DateTime?      @db.Timestamp(0)
+  updated_at     DateTime?      @db.Timestamp(0)
+  sass_companies sass_companies @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "starred_contacts_company_id_foreign")
+  contacts       contacts       @relation(fields: [contact_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "starred_contacts_contact_id_foreign")
+
+  @@index([company_id], map: "starred_contacts_company_id_foreign")
+  @@index([contact_id], map: "starred_contacts_contact_id_foreign")
+}
+
+model starred_conversations {
+  id              BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id      BigInt         @db.UnsignedBigInt
+  conversation_id BigInt         @db.UnsignedBigInt
+  created_at      DateTime?      @db.Timestamp(0)
+  updated_at      DateTime?      @db.Timestamp(0)
+  sass_companies  sass_companies @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "starred_conversations_company_id_foreign")
+  conversations   conversations  @relation(fields: [conversation_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "starred_conversations_conversation_id_foreign")
+
+  @@index([company_id], map: "starred_conversations_company_id_foreign")
+  @@index([conversation_id], map: "starred_conversations_conversation_id_foreign")
+}
+
+model taggables {
+  tag_id        BigInt @db.UnsignedBigInt
+  taggable_type String @db.VarChar(255)
+  taggable_id   BigInt @db.UnsignedBigInt
+  tags          tags   @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "taggables_tag_id_foreign")
+
+  @@unique([tag_id, taggable_id, taggable_type], map: "taggables_tag_id_taggable_id_taggable_type_unique")
+  @@index([taggable_type, taggable_id], map: "taggables_taggable_type_taggable_id_index")
+}
+
+model tags {
+  id           BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
+  name         Json
+  company_id   BigInt?     @db.UnsignedBigInt
+  slug         Json
+  type         String?     @db.VarChar(255)
+  color        String?     @db.VarChar(255)
+  order_column Int?
+  created_at   DateTime?   @db.Timestamp(0)
+  updated_at   DateTime?   @db.Timestamp(0)
+  taggables    taggables[]
+}
+
+model team_staffs {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  team_id    BigInt    @db.UnsignedBigInt
+  staff_id   BigInt    @db.UnsignedBigInt
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+}
+
+model teams {
+  id             BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  company_id     BigInt          @db.UnsignedBigInt
+  name           String?         @db.VarChar(255)
+  created_at     DateTime?       @db.Timestamp(0)
+  updated_at     DateTime?       @db.Timestamp(0)
+  conversations  conversations[]
+  sass_companies sass_companies  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "teams_company_id_foreign")
+
+  @@index([company_id], map: "teams_company_id_foreign")
+}
+
+model user_channels {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id    BigInt    @db.UnsignedBigInt
+  channel_id BigInt    @db.UnsignedBigInt
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+}
+
+model webhook_calls {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  name       String    @db.VarChar(255)
+  url        String    @db.VarChar(255)
+  headers    Json?
+  payload    Json?
+  exception  String?   @db.Text
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+}
+
+model whatsapp_message_templates {
+  id                  BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  channel_id          BigInt    @db.UnsignedBigInt
+  message_template_id String    @db.VarChar(255)
+  name                String    @db.VarChar(255)
+  components          String?   @db.LongText
+  language            String    @db.VarChar(255)
+  status              String    @db.VarChar(255)
+  category            String    @db.VarChar(255)
+  created_at          DateTime? @db.Timestamp(0)
+  updated_at          DateTime? @db.Timestamp(0)
+  channels            channels  @relation(fields: [channel_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "whatsapp_message_templates_channel_id_foreign")
+
+  @@index([channel_id], map: "whatsapp_message_templates_channel_id_foreign")
+}
+
+enum sass_packages_featured {
+  // 0 @map("0")
+  // 1 @map("1")
+}
+
+enum sass_packages_is_trial {
+  // 0 @map("0")
+  // 1 @map("1")
+}
+
+enum sass_packages_status {
+  // 0 @map("0")
+  // 1 @map("1")
+}
