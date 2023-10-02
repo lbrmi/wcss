@@ -842,24 +842,6 @@ model sass_offline_gateways {
   updated_at        DateTime? @db.Timestamp(0)
 }
 
-model sass_packages {
-  id               BigInt                 @id @default(autoincrement()) @db.UnsignedBigInt
-  title            String                 @db.VarChar(255)
-  slug             String                 @db.VarChar(255)
-  price            Float                  @default(0)
-  term             String?                @db.VarChar(255)
-  featured         sass_packages_featured @default(dbgenerated("0"))
-  is_trial         sass_packages_is_trial @default(dbgenerated("0"))
-  trial_days       Int?
-  status           sass_packages_status   @default(dbgenerated("1"))
-  features         String?                @db.Text
-  meta_keywords    String?                @db.LongText
-  meta_description String?                @db.LongText
-  created_at       DateTime?              @db.Timestamp(0)
-  updated_at       DateTime?              @db.Timestamp(0)
-  for_india        Boolean                @default(false)
-}
-
 model sass_pages {
   id               BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
   language_id      Int       @default(0)
@@ -1195,19 +1177,4 @@ model whatsapp_message_templates {
   channels            channels  @relation(fields: [channel_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "whatsapp_message_templates_channel_id_foreign")
 
   @@index([channel_id], map: "whatsapp_message_templates_channel_id_foreign")
-}
-
-enum sass_packages_featured {
-  // 0 @map("0")
-  // 1 @map("1")
-}
-
-enum sass_packages_is_trial {
-  // 0 @map("0")
-  // 1 @map("1")
-}
-
-enum sass_packages_status {
-  // 0 @map("0")
-  // 1 @map("1")
 }
