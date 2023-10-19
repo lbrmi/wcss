@@ -4,4 +4,4 @@ git pull
 yarn
 npx prisma generate
 yarn run build
-pm2 restart wcrs
+pm2 restart wcss
