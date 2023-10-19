@@ -19,6 +19,9 @@ export class AppService {
 
     const body = await response.json();
 
+    console.log('request', data);
+    console.log('response', body);
+
     await this.prisma.messages.update({
       where: {
         id: message_id,

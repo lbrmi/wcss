@@ -1,0 +1,26 @@
+{
+  "delay": 30,
+  "initialCommands": [
+    "git pull",
+    "yarn",
+    "npx prisma generate"
+  ],
+  "deployCommands": [
+    "yarn run build:portal",
+    "pm2 stop {instance}_app",
+    "pm2 delete {instance}_app",
+    "pm2 start 'yarn run start:portal' --name {instance}_app --log /dev/null --error /dev/null"
+  ],
+  "postDeployCommands": [
+  ],
+  "files": {
+    ".env": {
+      "template": ".env",
+      "toPath": "./.env"
+    },
+    "tsconfig.local.json": {
+      "template": "tsconfig.local.json",
+      "toPath": "./tsconfig.local.json"
+    }
+  }
+}

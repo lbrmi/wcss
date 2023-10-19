@@ -7,7 +7,7 @@ async function bootstrap() {
   // app.connectMicroservice({
   //   transport: Transport.RMQ,
   //   options: {
-  //     urls: [process.env.RABBITMQURI],
+  //     urls: [process.env.AMQP_URI],
   //     queue: 'send_message',
   //     queueOptions: {
   //       durable: true,
@@ -33,7 +33,7 @@ async function bootstrap() {
     {
       transport: Transport.RMQ,
       options: {
-        urls: [process.env.RABBITMQURI],
+        urls: [process.env.AMQP_URI],
         queue: 'send_message',
         queueOptions: {
           durable: true,
