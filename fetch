@@ -1,7 +1,7 @@
 #!/bin/bash
 
 git pull
-yarn
+npm install
 npx prisma generate
-yarn run build
+npm run build
 pm2 restart wcss
