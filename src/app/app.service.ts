@@ -21,6 +21,14 @@ export class AppService {
 
     console.log('request', data);
     console.log('response', body);
+    console.log('update', {
+      where: {
+        id: message_id,
+      },
+      data: {
+        wa_message_id: body.messages[0].id,
+      },
+    });
 
     await this.prisma.messages.update({
       where: {
